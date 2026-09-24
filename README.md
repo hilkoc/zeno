@@ -134,7 +134,15 @@ which a preprocessing library would fight.
 ## Deployment
 
 Pushing to `main` runs `.github/workflows/deploy.yml`: it runs the browser-free tests,
-builds, and publishes `dist/` to GitHub Pages.
+builds, and publishes `dist/` to GitHub Pages. Live at
+<https://hilkoc.github.io/zeno/>.
+
+Pages itself has to be enabled once, by hand — the workflow token's `pages: write`
+lets it deploy but not provision the site:
+
+```bash
+gh api -X POST /repos/OWNER/REPO/pages -f build_type=workflow
+```
 
 Pages serves from a subdirectory (`/zeno/`), so `vite.config.js` sets `base: './'` and
 every asset reference stays relative. `npm run check:pages` verifies that locally by

@@ -37,9 +37,11 @@ jobs:
 
       - run: npm run build
 
+      # Reads the existing Pages config. It cannot create the site: the
+      # workflow token's `pages: write` covers deploying, not provisioning.
+      # Enable Pages once, out of band:
+      #   gh api -X POST /repos/OWNER/REPO/pages -f build_type=workflow
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
