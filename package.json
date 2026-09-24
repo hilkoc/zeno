@@ -1,0 +1,22 @@
+{
+  "name": "zeno",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Deep-zoom fractal explorer: every fractal, including your own formula, compiled to a GPU shader.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173",
+    "test": "node tools/test-formula.mjs && node tools/test-camera.mjs",
+    "test:ui": "node tools/test-ui.mjs",
+    "gallery": "node tools/gallery.mjs"
+  },
+  "dependencies": {
+    "ogl": "^1.0.11"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0",
+    "vite": "^8.3.1"
+  }
+}

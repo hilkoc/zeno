@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>Zeno — deep-zoom fractal explorer</title>
+    <meta
+      name="description"
+      content="Zeno is a real-time GPU fractal explorer: Mandelbrot, Julia, Burning Ship, Collatz and your own formulas, with extended-precision deep zoom."
+    />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><circle cx='8' cy='8' r='7' fill='%237c5cff'/></svg>" />
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <canvas id="view"></canvas>
+
+    <button id="reveal" class="reveal-btn" title="Show panel" aria-label="Show panel" hidden>›</button>
+
+    <!-- ── side panel ─────────────────────────────────────────────── -->
+    <aside id="panel" class="panel">
+      <header class="panel-head">
+        <div class="brand">
+          <span class="brand-mark"></span>
+          <div>
+            <h1>Zeno</h1>
+            <p id="subtitle">GPU escape-time renderer</p>
+          </div>
+        </div>
+        <button id="collapse" class="icon-btn" title="Hide panel" aria-label="Hide panel">‹</button>
+      </header>
+
+      <div class="panel-body">
+        <section class="group" data-open="true">
+          <button class="group-head"><span>Fractal</span><i></i></button>
+          <div class="group-body">
+            <label class="field">
+              <span>Preset</span>
+              <select id="preset"></select>
+            </label>
+
+            <div id="custom-block" class="custom-block" hidden>
+              <label class="field">
+                <span>z<sub>n+1</sub> =</span>
+                <input id="formula" type="text" spellcheck="false" autocomplete="off" />
+              </label>
+              <p id="formula-status" class="status"></p>
+              <div class="chips" id="formula-examples"></div>
+              <label class="field">
+                <span>Plane</span>
+                <select id="seedmode">
+                  <option value="parameter">Parameter (c = pixel)</option>
+                  <option value="dynamic">Dynamic (z₀ = pixel)</option>
+                </select>
+              </label>
+            </div>
+
+            <div id="seed-block" class="seed-block" hidden>
+              <div class="field-head"><span>Seed c</span><button id="seed-random" class="mini-btn">random</button></div>
+              <div class="seed-row">
+                <div class="seed-pad" id="seed-pad">
+                  <canvas id="seed-canvas" width="176" height="132"></canvas>
+                  <div class="seed-dot" id="seed-dot"></div>
+                </div>
+                <div class="seed-inputs">
+                  <label><span>Re</span><input id="seed-re" type="number" step="0.001" /></label>
+                  <label><span>Im</span><input id="seed-im" type="number" step="0.001" /></label>
+                </div>
+              </div>
+            </div>
+
+            <label class="field range">
+              <span>Iterations <b id="iterations-value">400</b></span>
+              <input id="iterations" type="range" min="32" max="4000" step="1" value="400" />
+            </label>
+            <label class="check">
+              <input id="auto-iter" type="checkbox" checked />
+              <span>Scale iterations with zoom depth</span>
+            </label>
+            <label class="field range">
+              <span>Escape radius <b id="bailout-value">512</b></span>
+              <input id="bailout" type="range" min="2" max="4096" step="1" value="512" />
+            </label>
+          </div>
+        </section>
+
+        <section class="group" data-open="true">
+          <button class="group-head"><span>Colour</span><i></i></button>
+          <div class="group-body">
+            <div class="swatches" id="swatches"></div>
+            <label class="field">
+              <span>Mode</span>
+              <select id="colormode">
+                <option value="0">Smooth iteration</option>
+                <option value="1">Stripe average</option>
+                <option value="2">Orbit trap</option>
+                <option value="3">Distance field</option>
+              </select>
+            </label>
+            <label class="field range">
+              <span>Density <b id="density-value">1.00</b></span>
+              <input id="density" type="range" min="0.05" max="6" step="0.01" value="1" />
+            </label>
+            <label class="field range">
+              <span>Offset <b id="shift-value">0.00</b></span>
+              <input id="shift" type="range" min="0" max="1" step="0.001" value="0" />
+            </label>
+            <label class="field range">
+              <span>Palette drift <b id="cycle-value">0.00</b></span>
+              <input id="cycle" type="range" min="-0.4" max="0.4" step="0.005" value="0" />
+            </label>
+            <label class="field range" id="stripe-field">
+              <span>Stripe frequency <b id="stripe-value">6</b></span>
+              <input id="stripe" type="range" min="1" max="24" step="1" value="6" />
+            </label>
+            <div id="trap-field" hidden>
+              <label class="field">
+                <span>Trap shape</span>
+                <select id="trapkind">
+                  <option value="0">Point</option>
+                  <option value="1">Cross</option>
+                  <option value="2">Ring</option>
+                  <option value="3">Box</option>
+                </select>
+              </label>
+              <label class="field range">
+                <span>Trap size <b id="trapradius-value">1.00</b></span>
+                <input id="trapradius" type="range" min="0.05" max="3" step="0.01" value="1" />
+              </label>
+            </div>
+            <label class="field range">
+              <span>Relief shading <b id="shading-value">0.55</b></span>
+              <input id="shading" type="range" min="0" max="1" step="0.01" value="0.55" />
+            </label>
+            <label class="field range">
+              <span>Light angle <b id="light-value">135°</b></span>
+              <input id="light" type="range" min="0" max="360" step="1" value="135" />
+            </label>
+            <label class="field range">
+              <span>Edge contrast <b id="edge-value">0.35</b></span>
+              <input id="edge" type="range" min="0" max="1" step="0.01" value="0.35" />
+            </label>
+            <label class="field range">
+              <span>Interior <b id="interior-value">1.00</b></span>
+              <input id="interior" type="range" min="0" max="2" step="0.01" value="1" />
+            </label>
+            <label class="field range">
+              <span>Rim glow <b id="glow-value">0.25</b></span>
+              <input id="glow" type="range" min="0" max="1.5" step="0.01" value="0.25" />
+            </label>
+            <label class="field range">
+              <span>Bloom <b id="bloom-value">0.45</b></span>
+              <input id="bloom" type="range" min="0" max="1.5" step="0.01" value="0.45" />
+            </label>
+            <label class="field range">
+              <span>Exposure <b id="exposure-value">1.00</b></span>
+              <input id="exposure" type="range" min="0.2" max="3" step="0.01" value="1" />
+            </label>
+            <label class="field range">
+              <span>Vignette <b id="vignette-value">0.35</b></span>
+              <input id="vignette" type="range" min="0" max="1" step="0.01" value="0.35" />
+            </label>
+          </div>
+        </section>
+
+        <section class="group">
+          <button class="group-head"><span>Navigation</span><i></i></button>
+          <div class="group-body">
+            <label class="field">
+              <span>Jump to</span>
+              <select id="bookmarks"></select>
+            </label>
+            <div class="coord-grid">
+              <label><span>Centre Re</span><input id="center-re" type="text" spellcheck="false" /></label>
+              <label><span>Centre Im</span><input id="center-im" type="text" spellcheck="false" /></label>
+            </div>
+            <div class="btn-row">
+              <button id="reset" class="btn">Reset view</button>
+              <button id="copy-link" class="btn">Copy link</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="group">
+          <button class="group-head"><span>Quality</span><i></i></button>
+          <div class="group-body">
+            <label class="field">
+              <span>Render scale</span>
+              <select id="quality">
+                <option value="0.5">Performance (0.5×)</option>
+                <option value="0.75">Balanced (0.75×)</option>
+                <option value="1" selected>Crisp (1×)</option>
+                <option value="dpr">Native (device pixels)</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Antialiasing</span>
+              <select id="samples">
+                <option value="1">Off</option>
+                <option value="16">16 samples</option>
+                <option value="64" selected>64 samples</option>
+                <option value="256">256 samples</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Precision</span>
+              <select id="precision">
+                <option value="auto" selected>Auto</option>
+                <option value="single">Single (fast)</option>
+                <option value="double">Extended (deep)</option>
+              </select>
+            </label>
+            <p class="hint">
+              Extended precision pairs two float32s to reach ~1e-15 accuracy, taking the usable zoom
+              from about 10⁴ to 10¹². Auto engages it as soon as a pixel gets close to the float32
+              step size, which is what otherwise turns a deep zoom into square blocks. It covers
+              +, −, ×, ÷ and integer powers only — formulas using sin, exp and friends stay single
+              precision, and the badge in the corner turns amber once they run out of detail.
+            </p>
+          </div>
+        </section>
+      </div>
+    </aside>
+
+    <!-- ── heads-up display ───────────────────────────────────────── -->
+    <div id="hud" class="hud">
+      <div class="hud-row"><span>zoom</span><b id="hud-zoom">1.0×</b></div>
+      <div class="hud-row"><span>centre</span><b id="hud-center">0, 0</b></div>
+      <div class="hud-row"><span>iter</span><b id="hud-iter">400</b></div>
+      <div class="hud-row"><span>samples</span><b id="hud-samples">1</b></div>
+      <div class="hud-row"><span>fps</span><b id="hud-fps">—</b></div>
+      <div class="hud-row"><span id="hud-precision" class="badge">single</span><span id="hud-de" class="badge dim">DE</span></div>
+    </div>
+
+    <!-- ── zoom transport ─────────────────────────────────────────── -->
+    <div id="transport" class="transport">
+      <button id="playpause" class="icon-btn big" title="Pause / resume (Space)">▮▮</button>
+      <div class="slider-wrap">
+        <div class="slider-scale">
+          <span>zoom out</span><span class="center-label">paused</span><span>zoom in</span>
+        </div>
+        <input id="zoomspeed" class="zoom-slider" type="range" min="-1" max="1" step="0.001" value="0" />
+        <div class="ticks"><i></i><i></i><i class="mid"></i><i></i><i></i></div>
+      </div>
+      <div class="rate" id="rate">0.00×/s</div>
+    </div>
+
+    <div id="tools" class="tools">
+      <button id="shot" class="icon-btn" title="Save PNG (S)">⤓</button>
+      <button id="full" class="icon-btn" title="Fullscreen (F)">⛶</button>
+      <button id="help-btn" class="icon-btn" title="Help (?)">?</button>
+    </div>
+
+    <div id="help" class="help" hidden>
+      <div class="help-card">
+        <button id="help-close" class="icon-btn close">×</button>
+        <h2>Zeno</h2>
+        <div class="help-cols">
+          <div>
+            <h3>Navigate</h3>
+            <ul>
+              <li><b>Drag</b> — pan</li>
+              <li><b>Wheel</b> — zoom at cursor</li>
+              <li><b>Double click</b> — centre here</li>
+              <li><b>Slider</b> — continuous zoom; centre = paused</li>
+              <li><b>Space</b> — pause / resume</li>
+              <li><b>Arrows</b> — nudge view</li>
+              <li><b>R</b> reset · <b>S</b> save · <b>F</b> fullscreen · <b>Tab</b> hide UI</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Custom formulas</h3>
+            <p>Enter the right-hand side of z<sub>n+1</sub> = f(z, c). <code>z</code> is z<sub>n</sub>.</p>
+            <ul class="tight">
+              <li><b>Operators</b> <code>+ − * / ** ^</code>, implicit products (<code>2z</code>)</li>
+              <li><b>Names</b> <code>z c n i pi tau e phi</code></li>
+              <li>
+                <b>Functions</b> <code>abs conj re im len norm sqrt exp log sin cos tan sinh cosh tanh pow</code>
+              </li>
+              <li><code>abs(z)</code> folds each component (Burning Ship), <code>len(z)</code> is the modulus</li>
+            </ul>
+            <p class="dimtext">
+              Holomorphic formulas get a symbolically differentiated orbit derivative, which drives
+              distance-field colouring and relief shading. Formulas built only from
+              <code>+ − × ÷</code> and integer powers also get an extended-precision version for
+              deep zooms.
+            </p>
+            <p class="dimtext">
+              If a formula leaves almost nothing escaping — rational maps such as
+              <code>(z**2 + c)/(z**2 - c)</code> — switch the colour mode to
+              <b>Stripe average</b> or <b>Orbit trap</b>. Those read the whole orbit, so they still
+              show structure where escape time has nothing to say.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast" hidden></div>
+
+    <noscript><p class="noscript">Zeno needs JavaScript and WebGL 2.</p></noscript>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

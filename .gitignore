@@ -1,0 +1,21 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+
+# logs and editor noise
+*.log
+npm-debug.log*
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# local environment overrides
+.env
+.env.*
+!.env.example
+
+# screenshots from the headless harnesses (they write to /tmp by default)
+/screenshots/
