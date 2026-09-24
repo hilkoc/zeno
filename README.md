@@ -99,6 +99,8 @@ npm test          # parser, codegen and camera maths — no browser needed
 npm run dev &     # the browser tests drive the dev server
 npm run test:ui   # interaction pass in headless Chromium
 npm run gallery   # renders every preset to /tmp/forge and flags black frames
+
+npm run check:pages   # builds, serves dist/ from a subpath, boots it
 ```
 
 The browser harnesses run Chromium with SwiftShader, so they check correctness rather
@@ -128,6 +130,16 @@ call; p5 and PixiJS are the wrong abstraction level entirely.
 [OGL](https://github.com/oframe/ogl) is a zero-dependency ES-module wrapper that does the
 minimum over raw WebGL2 and leaves the GLSL untouched — including `#version 300 es`,
 which a preprocessing library would fight.
+
+## Deployment
+
+Pushing to `main` runs `.github/workflows/deploy.yml`: it runs the browser-free tests,
+builds, and publishes `dist/` to GitHub Pages.
+
+Pages serves from a subdirectory (`/zeno/`), so `vite.config.js` sets `base: './'` and
+every asset reference stays relative. `npm run check:pages` verifies that locally by
+serving the build from a subpath and booting it — an absolute base works on a dev server
+at `/` and 404s on Pages, which is an easy way to ship a blank page.
 
 ## Browser support
 

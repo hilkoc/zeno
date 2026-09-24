@@ -10,7 +10,8 @@
     "preview": "vite preview --port 4173",
     "test": "node tools/test-formula.mjs && node tools/test-camera.mjs",
     "test:ui": "node tools/test-ui.mjs",
-    "gallery": "node tools/gallery.mjs"
+    "gallery": "node tools/gallery.mjs",
+    "check:pages": "npm run build && node tools/check-pages.mjs"
   },
   "dependencies": {
     "ogl": "^1.0.11"
